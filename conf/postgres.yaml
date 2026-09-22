@@ -1,0 +1,8 @@
+lottery:
+  host: localhost
+  port: 5432
+  user: tester
+  pass: 123456
+  dbname: lottery
+  sslmode: disable
+  log: gift.db.log
