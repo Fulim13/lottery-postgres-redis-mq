@@ -1,0 +1,44 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: lottery-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: tester
+      POSTGRES_PASSWORD: "123456"
+      POSTGRES_dB: lottery
+    ports:
+      - "5432:5432"
+    volumes:
+      - lottery-pgdata:/var/lib/postgresql/data
+      # While the data volume is empty (so, on the very first start) the container runs
+      # every script in this directory, which is how the tables get created and seeded.
+      - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+
+  redis:
+    image: redis:7-alpine
+    container_name: lottery-redis
+    restart: unless-stopped
+    # Stock levels live in Redis and are disposable: the app reloads them from Postgres on
+    # startup. So persistence is turned off in exchange for speed.
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    ports:
+      - "6379:6379"
+
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: lottery-rabbitmq
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: lottery
+      RABBITMQ_DEFAULT_PASS: "123456"
+    ports:
+      - "5672:5672" # AMQP, this is what the app connects to
+      - "15672:15672" # management UI at http://localhost:15672
+    volumes:
+      - lottery-rabbitmq:/var/lib/rabbitmq
+
+
+volumes:
+  lottery-pgdata:
+  lottery-rabbitmq:
