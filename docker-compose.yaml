@@ -37,6 +37,9 @@ services:
       - "15672:15672" # management UI at http://localhost:15672
     volumes:
       - lottery-rabbitmq:/var/lib/rabbitmq
+      # The delay on a cancel-order message comes from the delayed-message-exchange plugin
+      - ./docker/rabbitmq/rabbitmq_delayed_message_exchange-3.13.0.ez:/opt/rabbitmq/plugins/rabbitmq_delayed_message_exchange-3.13.0.ez:ro
+      - ./docker/rabbitmq/enabled_plugins:/etc/rabbitmq/enabled_plugins:ro
 
 
 volumes:
