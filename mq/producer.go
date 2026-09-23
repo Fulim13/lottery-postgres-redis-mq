@@ -12,8 +12,6 @@ import (
 )
 
 const (
-	// AMQP address of the broker; the credentials are the ones in docker-compose.yaml
-	END_POINT = "amqp://lottery:123456@localhost:5672/"
 	// The exchange cancel-order messages are published to. It is declared as an
 	// x-delayed-message exchange, a type the rabbitmq_delayed_message_exchange plugin adds:
 	// it holds a message back for the number of milliseconds in the message's x-delay header
@@ -27,6 +25,8 @@ const (
 )
 
 var (
+	// AMQP address of the broker, built from conf/rabbitmq.yaml by InitMQ
+	endPoint     string
 	producerConn *amqp.Connection
 	producer     *amqp.Channel
 	ponce        sync.Once
@@ -42,7 +42,7 @@ func GetProducer() *amqp.Channel {
 		}
 		var err error
 		// Connect to the broker
-		producerConn, err = amqp.Dial(END_POINT)
+		producerConn, err = amqp.Dial(endPoint)
 		if err != nil {
 			log.Fatal(err)
 		}

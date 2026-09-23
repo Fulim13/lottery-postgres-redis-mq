@@ -1,0 +1,5 @@
+host: localhost
+port: 5672 # AMQP port published by docker-compose.yaml
+user: lottery
+pass: 123456
+vhost: "/" # the default namespace; docker-compose.yaml doesn't create any other

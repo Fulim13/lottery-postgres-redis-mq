@@ -1,14 +1,58 @@
 package mq
 
 import (
+	"fmt"
 	"log"
 	"log/slog"
 	"sync"
 
 	"github.com/Fulim13/lottery/database"
+	"github.com/Fulim13/lottery/util"
 	"github.com/bytedance/sonic"
 	amqp "github.com/rabbitmq/amqp091-go"
 )
+
+// Read the broker settings, connect, and declare the exchange and the queue. Called once at
+// startup like the other Init/Connect calls in main.go, so a broker that is down stops the
+// process here instead of failing the first draw.
+func InitMQ(confDir, confFile, fileType string) {
+	viper := util.InitViper(confDir, confFile, fileType)
+	uri := amqp.URI{
+		Scheme:   "amqp",
+		Host:     viper.GetString("host"),
+		Port:     viper.GetInt("port"),
+		Username: viper.GetString("user"),
+		Password: viper.GetString("pass"),
+		Vhost:    viper.GetString("vhost"),
+	}
+	endPoint = uri.String() // escapes the credentials and the vhost for us
+
+	// Connect both sides now rather than on the first message
+	GetProducer()
+	GetConsumer()
+	slog.Info("connect to rabbitmq", "host", uri.Host, "port", uri.Port, "vhost", uri.Vhost)
+}
+
+// The amqp client logs nothing unless it is given a logger, so hand it one that writes into
+// slog. Its connection and channel messages then end up in the same rotating log file as
+// everything else, which is what InitRocketLog did for the RocketMQ client's separate log file.
+// Call it before InitMQ to see the connecting itself logged.
+func InitMQLog() {
+	amqp.SetLogger(mqLogger{})
+}
+
+// amqp.Logging is a single Printf method.
+type mqLogger struct{}
+
+func (mqLogger) Printf(format string, v ...any) {
+	slog.Info("rabbitmq: " + fmt.Sprintf(format, v...))
+}
+
+// Stop the consumer, close the producer, and drop both connections.
+func Close() {
+	StopConsumer()
+	StopProducter()
+}
 
 var (
 	consumerConn   *amqp.Connection
@@ -32,7 +76,7 @@ func GetConsumer() *amqp.Channel {
 		}
 		var err error
 		// Connect to the broker
-		consumerConn, err = amqp.Dial(END_POINT)
+		consumerConn, err = amqp.Dial(endPoint)
 		if err != nil {
 			log.Fatal(err)
 		}
