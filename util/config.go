@@ -7,6 +7,13 @@ import (
 	"github.com/spf13/viper"
 )
 
+// FileType
+const (
+	JSON = "json"
+	YAML = "yaml"
+	ENV  = "env"
+)
+
 // Viper parses JSON, TOML, YAML, HCL, INI and ENV files. It can even watch a config file for
 // changes (WatchConfig), so new values can be picked up without restarting the process.
 func InitViper(dir, file, FileType string) *viper.Viper {
