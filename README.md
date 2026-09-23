@@ -2,6 +2,11 @@
 
 A high-concurrency lottery system built using Go, Redis, and MySQL, with weighted prize selection, real-time inventory management, and safe stock deduction to handle high traffic.
 
+![alt text](app-display.png)
+![alt text](app-display2.png)
+![alt text](app-display3.png)
+
+
 ## How to run the app
 
 ```sh
@@ -26,7 +31,32 @@ docker compose down     # stop the containers, keep the data
 docker compose down -v  # stop them and wipe the volumes, so the next start re-seeds Postgres
 ```
 
-# The flow
+## How to troubleshoot with docker
+```sh
+
+# postgres
+docker exec -it lottery-postgres psql -U tester -d lottery -c '\dt'
+docker exec -it lottery-postgres psql -U tester -d lottery -c 'select id, name, count from inventory order by id;'
+docker exec -it lottery-postgres psql -U tester -d lottery -c 'select * from orders order by id desc limit 10;'
+docker exec -it lottery-postgres psql -U tester -d lottery -c '\d inventory'
+docker logs --tail 50 -f lottery-postgres
+
+# Redis
+# inventory
+docker exec -it lottery-redis redis-cli -n 2 KEYS 'gift_count_*'
+docker exec -it lottery-redis redis-cli -n 2 GET gift_count_9
+docker exec -it lottery-redis redis-cli -n 2 DBSIZE
+
+# temp orders (unpaid winners)
+docker exec -it lottery-redis redis-cli -n 2 KEYS 'porder_*'
+docker exec -it lottery-redis redis-cli -n 2 GET porder_1
+
+# everything, key = value
+docker exec lottery-redis sh -c 'redis-cli -n 2 --scan | sort | xargs -n1 -I{} sh -c "printf \"%-18s = \" {}; redis-cli -n 2 GET {}"'
+```
+
+
+##  The flow
 
 Let say three prizes have 5, 2 and 4 units left, and all of them must be handed out.
 
